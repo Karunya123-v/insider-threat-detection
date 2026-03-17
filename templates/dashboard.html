@@ -1,102 +1,111 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Insider Threat Detection Dashboard</title>
+  <title>Insider Threat Dashboard</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .suspicious { color: red; font-weight: bold; }
+    .normal { color: green; font-weight: bold; }
+    .table-wrapper { max-height: 400px; overflow-y: auto; }
+  </style>
 </head>
 <body>
 <div class="container mt-4">
-  <h1 class="text-center">Insider Threat Detection Dashboard</h1>
 
-  <!-- Summary Cards -->
-  <div class="row mt-4">
+  <h1 class="text-center mb-4">Insider Threat Detection Dashboard</h1>
+
+  <!-- Summary cards -->
+  <div class="row mb-4">
     <div class="col-md-4">
-      <div class="card text-white bg-success mb-3">
-        <div class="card-body">
-          <h5 class="card-title">Total Employees</h5>
-          <p class="card-text">{{ total_employees }}</p>
-        </div>
+      <div class="card text-center p-3">
+        <h5>Total Employees</h5>
+        <h3>{{ total_employees }}</h3>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="card text-white bg-danger mb-3">
-        <div class="card-body">
-          <h5 class="card-title">Suspicious Activities</h5>
-          <p class="card-text">{{ suspicious_count }}</p>
-        </div>
+      <div class="card text-center p-3">
+        <h5>Suspicious Employees</h5>
+        <h3>{{ suspicious_count }}</h3>
+        <p>{{ suspicious_percent }}%</p>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="card text-white bg-info mb-3">
-        <div class="card-body">
-          <h5 class="card-title">Suspicious %</h5>
-          <p class="card-text">{{ suspicious_percent }}%</p>
-        </div>
+      <div class="card text-center p-3">
+        <h5>Normal Employees</h5>
+        <h3>{{ normal_count }}</h3>
       </div>
     </div>
   </div>
 
-  <!-- Charts -->
-  <div class="row mt-4">
-    <div class="col-md-6">
-      <canvas id="pieChart"></canvas>
-    </div>
-    <div class="col-md-6">
-      <canvas id="barChart"></canvas>
-    </div>
+  <!-- Table -->
+  <div class="table-wrapper mb-4">
+    <table class="table table-striped table-bordered">
+      <thead class="table-dark">
+        <tr>
+          <th>Employee ID</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp, status in results %}
+        <tr>
+          <td>{{ emp }}</td>
+          <td class="{{ 'suspicious' if status=='Suspicious' else 'normal' }}">{{ status }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 
-  <!-- Employee Table -->
-  <div class="row mt-4">
-    <div class="col">
-      <table class="table table-bordered table-striped">
-        <thead class="table-dark">
-          <tr>
-            <th>Employee</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for emp, status in results %}
-          <tr style="color: {% if status=='Suspicious' %}red{% else %}green{% endif %}">
-            <td>{{ emp }}</td>
-            <td>{{ status }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+  <!-- Bar Chart -->
+  <canvas id="barChart" height="100"></canvas>
+
+  <!-- Pie Chart -->
+  <canvas id="pieChart" height="100" class="mt-4"></canvas>
+
+  <!-- Footer -->
+  <footer class="text-center mt-4 mb-2">
+    <small>Author: Karunya Vaithiyanathan</small>
+  </footer>
+
 </div>
 
 <script>
-  // Pie chart
-  const pieData = {
-    labels: ['Normal', 'Suspicious'],
-    datasets: [{
-      data: [{{ normal_count }}, {{ suspicious_count }}],
-      backgroundColor: ['green', 'red']
-    }]
-  };
-  new Chart(document.getElementById('pieChart'), {
-    type: 'pie',
-    data: pieData
+  // Bar chart: Top 50 employees by File Access
+  const barCtx = document.getElementById('barChart').getContext('2d');
+  const barChart = new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: {{ employee_ids|tojson }},
+      datasets: [{
+        label: 'File Access Count',
+        data: {{ files_accessed|tojson }},
+        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true } }
+    }
   });
 
-  // Bar chart
-  const barData = {
-    labels: {{ employee_ids }},
-    datasets: [{
-      label: 'Files Accessed',
-      data: {{ files_accessed }},
-      backgroundColor: 'blue'
-    }]
-  };
-  new Chart(document.getElementById('barChart'), {
-    type: 'bar',
-    data: barData
+  // Pie chart: Normal vs Suspicious
+  const pieCtx = document.getElementById('pieChart').getContext('2d');
+  const pieChart = new Chart(pieCtx, {
+    type: 'pie',
+    data: {
+      labels: ['Normal', 'Suspicious'],
+      datasets: [{
+        data: [{{ normal_count }}, {{ suspicious_count }}],
+        backgroundColor: ['green', 'red']
+      }]
+    },
+    options: { responsive: true }
   });
 </script>
+
 </body>
 </html>
