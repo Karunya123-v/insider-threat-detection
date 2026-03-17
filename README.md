@@ -48,7 +48,7 @@ To design an AI-based system that detects insider threats within an organization
 
 ---
 
-## Output / Screenshots
+## Output
 **Sample Dashboard:**  
 
 - Summary cards showing total employees, suspicious count, and percentage  
@@ -56,7 +56,6 @@ To design an AI-based system that detects insider threats within an organization
 - Pie chart of Normal vs Suspicious  
 - Bar chart for files accessed per employee  
 
-*(Place screenshots in `screenshots/` folder and reference them here)*
 
 ---
 
