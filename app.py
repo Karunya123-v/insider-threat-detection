@@ -1,32 +1,53 @@
 from flask import Flask, render_template, request
 import pandas as pd
-from sklearn.ensemble import IsolationForest
+from sklearn.ensemble import RandomForestClassifier
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return render_template("index.html")
+    return render_template('index.html')
 
-@app.route('/detect', methods=['POST'])
-def detect():
+@app.route('/predict', methods=['POST'])
+def predict():
+    file = request.files['dataset']
+    df = pd.read_csv(file)
+    
+    # ML: Predict Suspicious vs Normal
+    if 'Suspicious_Flag' in df.columns:
+        X = df.drop('Suspicious_Flag', axis=1)
+        y = df['Suspicious_Flag'].apply(lambda x: 1 if x=='Suspicious' else 0)
+    else:
+        X = df
+        y = None
 
-    file = request.files['file']
-    data = pd.read_csv(file)
+    model = RandomForestClassifier()
+    if y is not None:
+        model.fit(X, y)
+        df['Prediction'] = model.predict(X)
+        df['Prediction'] = df['Prediction'].apply(lambda x: 'Suspicious' if x==1 else 'Normal')
+    else:
+        df['Prediction'] = 'Normal'
 
-    model = IsolationForest(contamination=0.2)
+    # Dashboard stats
+    total_employees = len(df)
+    suspicious_count = (df['Prediction']=='Suspicious').sum()
+    suspicious_percent = round((suspicious_count/total_employees)*100,2)
+    normal_count = total_employees - suspicious_count
 
-    X = data[['login_time','files_accessed','data_downloaded']]
+    employee_ids = df.iloc[:,0].tolist()       # First column = Employee_ID
+    files_accessed = df.iloc[:,1].tolist()     # Second column = File_Access_Count
 
-    model.fit(X)
+    results = list(zip(df.iloc[:,0], df['Prediction']))
+    
+    return render_template('dashboard.html', 
+                           results=results,
+                           total_employees=total_employees,
+                           suspicious_count=suspicious_count,
+                           suspicious_percent=suspicious_percent,
+                           normal_count=normal_count,
+                           employee_ids=employee_ids,
+                           files_accessed=files_accessed)
 
-    data['Threat'] = model.predict(X)
-
-    data['Threat'] = data['Threat'].replace({1:'Normal',-1:'Suspicious'})
-
-    table = data.to_html()
-
-    return render_template("result.html", table=table)
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)
