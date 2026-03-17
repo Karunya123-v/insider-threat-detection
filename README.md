@@ -66,5 +66,5 @@ To design an AI-based system that detects insider threats within an organization
 - Easily extendable to real-time monitoring for organizations  
 
 ---
-Author
+Author:
 Karunya Vaithiyanathan
