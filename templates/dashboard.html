@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Insider Threat Detection Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="container mt-4">
+  <h1 class="text-center">Insider Threat Detection Dashboard</h1>
+
+  <!-- Summary Cards -->
+  <div class="row mt-4">
+    <div class="col-md-4">
+      <div class="card text-white bg-success mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Total Employees</h5>
+          <p class="card-text">{{ total_employees }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-white bg-danger mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Suspicious Activities</h5>
+          <p class="card-text">{{ suspicious_count }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-white bg-info mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Suspicious %</h5>
+          <p class="card-text">{{ suspicious_percent }}%</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="row mt-4">
+    <div class="col-md-6">
+      <canvas id="pieChart"></canvas>
+    </div>
+    <div class="col-md-6">
+      <canvas id="barChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Employee Table -->
+  <div class="row mt-4">
+    <div class="col">
+      <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+          <tr>
+            <th>Employee</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp, status in results %}
+          <tr style="color: {% if status=='Suspicious' %}red{% else %}green{% endif %}">
+            <td>{{ emp }}</td>
+            <td>{{ status }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Pie chart
+  const pieData = {
+    labels: ['Normal', 'Suspicious'],
+    datasets: [{
+      data: [{{ normal_count }}, {{ suspicious_count }}],
+      backgroundColor: ['green', 'red']
+    }]
+  };
+  new Chart(document.getElementById('pieChart'), {
+    type: 'pie',
+    data: pieData
+  });
+
+  // Bar chart
+  const barData = {
+    labels: {{ employee_ids }},
+    datasets: [{
+      label: 'Files Accessed',
+      data: {{ files_accessed }},
+      backgroundColor: 'blue'
+    }]
+  };
+  new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: barData
+  });
+</script>
+</body>
+</html>
