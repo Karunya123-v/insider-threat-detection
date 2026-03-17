@@ -1,6 +1,5 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
 
 app = Flask(__name__)
 
@@ -10,44 +9,39 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    if 'dataset' not in request.files:
+        return redirect('/')
     file = request.files['dataset']
     df = pd.read_csv(file)
-    
-    # ML: Predict Suspicious vs Normal
-    if 'Suspicious_Flag' in df.columns:
-        X = df.drop('Suspicious_Flag', axis=1)
-        y = df['Suspicious_Flag'].apply(lambda x: 1 if x=='Suspicious' else 0)
-    else:
-        X = df
-        y = None
 
-    model = RandomForestClassifier()
-    if y is not None:
-        model.fit(X, y)
-        df['Prediction'] = model.predict(X)
-        df['Prediction'] = df['Prediction'].apply(lambda x: 'Suspicious' if x==1 else 'Normal')
-    else:
-        df['Prediction'] = 'Normal'
+    # Ensure Suspicious_Flag exists
+    if 'Suspicious_Flag' not in df.columns:
+        df['Suspicious_Flag'] = 'Normal'
 
-    # Dashboard stats
+    # Summary stats
     total_employees = len(df)
-    suspicious_count = (df['Prediction']=='Suspicious').sum()
-    suspicious_percent = round((suspicious_count/total_employees)*100,2)
+    suspicious_count = (df['Suspicious_Flag'] == 'Suspicious').sum()
     normal_count = total_employees - suspicious_count
+    suspicious_percent = round((suspicious_count / total_employees) * 100, 2)
 
-    employee_ids = df.iloc[:,0].tolist()       # First column = Employee_ID
-    files_accessed = df.iloc[:,1].tolist()     # Second column = File_Access_Count
+    # Prepare results for table
+    results = list(zip(df['Employee_ID'], df['Suspicious_Flag']))
 
-    results = list(zip(df.iloc[:,0], df['Prediction']))
-    
-    return render_template('dashboard.html', 
-                           results=results,
-                           total_employees=total_employees,
-                           suspicious_count=suspicious_count,
-                           suspicious_percent=suspicious_percent,
-                           normal_count=normal_count,
-                           employee_ids=employee_ids,
-                           files_accessed=files_accessed)
+    # Top 50 employees by File_Access_Count for bar chart
+    df_sorted = df.sort_values(by='File_Access_Count', ascending=False).head(50)
+    employee_ids = df_sorted['Employee_ID'].tolist()
+    files_accessed = df_sorted['File_Access_Count'].tolist()
+
+    return render_template(
+        'dashboard.html',
+        total_employees=total_employees,
+        suspicious_count=suspicious_count,
+        suspicious_percent=suspicious_percent,
+        normal_count=normal_count,
+        results=results,
+        employee_ids=employee_ids,
+        files_accessed=files_accessed
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)
