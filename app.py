@@ -1,20 +1,14 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template
 import pandas as pd
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    # Load dataset directly
+    df = pd.read_csv("dataset.csv")
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    if 'dataset' not in request.files:
-        return redirect('/')
-    file = request.files['dataset']
-    df = pd.read_csv(file)
-
-    # Ensure Suspicious_Flag exists
+    # Ensure column exists
     if 'Suspicious_Flag' not in df.columns:
         df['Suspicious_Flag'] = 'Normal'
 
@@ -24,10 +18,10 @@ def predict():
     normal_count = total_employees - suspicious_count
     suspicious_percent = round((suspicious_count / total_employees) * 100, 2)
 
-    # Prepare results for table
+    # Table data
     results = list(zip(df['Employee_ID'], df['Suspicious_Flag']))
 
-    # Top 50 employees by File_Access_Count for bar chart
+    # Graph data
     df_sorted = df.sort_values(by='File_Access_Count', ascending=False).head(50)
     employee_ids = df_sorted['Employee_ID'].tolist()
     files_accessed = df_sorted['File_Access_Count'].tolist()
